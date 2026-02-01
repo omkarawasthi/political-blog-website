@@ -1,31 +1,11 @@
 /**
  * Political Blog - Core Logic
- * Handles localStorage, DOM manipulation, and page specific logic.
+ * Handles API interactions, DOM manipulation, and page specific logic.
  */
 
 // Constants
-const STORAGE_KEY = 'politics_blog_data';
+const API_URL = 'https://political-blog-website-backend.onrender.com/api/blogs';
 const DEFAULT_CATEGORIES = ['Politics', 'Policy', 'Election', 'Opinion'];
-
-// Default Data (if empty)
-const SEED_DATA = [
-    {
-        id: '1',
-        title: 'The Future of Digital Democracy',
-        description: 'As technology evolves, so does the way we participate in our democracy. Digital voting, online town halls, and AI-driven policy analysis are becoming realities. This post explores the potential benefits and risks of this digital transformation in the political landscape.',
-        date: '2023-10-15',
-        category: 'Politics',
-        image: null // Placeholder handled in UI
-    },
-    {
-        id: '17282719281',
-        title: 'Policy Changes in 2024',
-        description: 'A deep dive into the new economic policies proposed for the upcoming fiscal year. We analyze the impact on small businesses, international trade relationships, and the average consumer. What do these changes really mean for the economy?',
-        date: '2024-01-20',
-        category: 'Policy',
-        image: null
-    }
-];
 
 // App State
 const state = {
@@ -35,7 +15,7 @@ const state = {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+    fetchBlogs();
     initRouter();
     setupMobileMenu();
 });
@@ -51,33 +31,30 @@ function setupMobileMenu() {
     }
 }
 
-// --- Data Management ---
-function loadData() {
-    const rawData = localStorage.getItem(STORAGE_KEY);
-    if (rawData) {
-        const parsed = JSON.parse(rawData);
-        state.blogs = parsed.blogs || [];
-        state.categories = parsed.categories || DEFAULT_CATEGORIES;
-    } else {
-        // Seed initial data
-        state.blogs = SEED_DATA;
-        state.categories = DEFAULT_CATEGORIES;
-        saveData();
-    }
-}
-
-function saveData() {
+// --- Data Management (API) ---
+async function fetchBlogs() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        return true;
-    } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            alert('Storage limit exceeded! Image might be too large. Try a smaller image.');
-        } else {
-            console.error('Error saving data:', e);
-            alert('Error saving data. See console for details.');
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch');
+
+        const data = await response.json();
+        state.blogs = data || [];
+
+        // Extract Unique Categories from fetched blogs + Defaults
+        const usedCategories = state.blogs.map(b => b.category);
+        state.categories = [...new Set([...DEFAULT_CATEGORIES, ...usedCategories])];
+
+        // Re-render if on homepage
+        if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
+            renderHomePage();
         }
-        return false;
+    } catch (error) {
+        console.error('Error fetching blogs:', error);
+        // Only alert if we really can't get data, maybe show UI error instead
+        const grid = document.getElementById('blogGrid');
+        if (grid) {
+            grid.innerHTML = '<p class="text-center" style="grid-column: 1/-1; color: red;">Failed to load blogs. Ensure backend server is running.</p>';
+        }
     }
 }
 
@@ -87,11 +64,11 @@ function initRouter() {
     const page = path.split('/').pop();
 
     if (page === 'index.html' || page === '') {
-        renderHomePage();
+        // Render happens after fetch
     } else if (page === 'add-blog.html') {
         initAddBlogPage();
     } else if (page === 'blog.html') {
-        renderSingleBlogPage();
+        fetchSingleBlog();
     }
 
     // Global Header Highlight
@@ -117,8 +94,7 @@ function renderHomePage() {
 
     grid.innerHTML = ''; // Clear
 
-    // Sort by date new to old
-    const sortedBlogs = [...state.blogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sortedBlogs = [...state.blogs]; // Backend usually returns sorted, but good to ensure
 
     if (sortedBlogs.length === 0) {
         grid.innerHTML = '<p class="text-center" style="grid-column: 1/-1;">No blogs found. Start by adding one!</p>';
@@ -134,9 +110,10 @@ function renderHomePage() {
 function createBlogCard(blog) {
     const article = document.createElement('article');
     article.className = 'blog-card';
-    article.onclick = () => window.location.href = `blog.html?id=${blog.id}`;
+    // Use _id for MongoDB documents
+    article.onclick = () => window.location.href = `blog.html?id=${blog._id}`;
 
-    // Image handling
+    // Image handling - use default if null
     const imgSrc = blog.image ? blog.image : 'https://placehold.co/600x400/1a3c6e/ffffff?text=Political+Blog';
 
     article.innerHTML = `
@@ -166,8 +143,8 @@ function initAddBlogPage() {
 
     if (!form) return;
 
-    // Populate Categories
-    renderCategoryOptions(categorySelect);
+    // Populate Categories - Wait a bit for fetch or just render defaults immediately
+    setTimeout(() => renderCategoryOptions(categorySelect), 500);
 
     // Image Preview
     imageInput.addEventListener('change', function (e) {
@@ -182,34 +159,49 @@ function initAddBlogPage() {
         }
     });
 
-    // Handle Category "Other/New"
-    // For simplicity, we just have a text input that overrides select if filled
-
     // Form Submit
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
-        const date = document.getElementById('date').value; // YYYY-MM-DD
+        const date = document.getElementById('date').value;
         let category = newCategoryInput.value.trim() || categorySelect.value;
-
-        // Handle Image
         const file = imageInput.files[0];
 
+        // Create FormData
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('date', date);
+        formData.append('category', category);
         if (file) {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                saveNewBlog(title, description, date, category, event.target.result);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            saveNewBlog(title, description, date, category, null);
+            formData.append('image', file);
+        }
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert('Blog published successfully to database!');
+                window.location.href = 'index.html';
+            } else {
+                const err = await response.json();
+                alert('Error publishing blog: ' + err.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Server error. Check if backend is running.');
         }
     });
 }
 
 function renderCategoryOptions(selectElement) {
+    if (!selectElement) return;
+
     selectElement.innerHTML = '';
     state.categories.forEach(cat => {
         const option = document.createElement('option');
@@ -219,45 +211,28 @@ function renderCategoryOptions(selectElement) {
     });
 }
 
-function saveNewBlog(title, description, date, category, imageBase64) {
-    const newBlog = {
-        id: Date.now().toString(),
-        title,
-        description,
-        date,
-        category,
-        image: imageBase64
-    };
-
-    // Update state
-    state.blogs.push(newBlog);
-
-    // Add category if new
-    if (!state.categories.includes(category)) {
-        state.categories.push(category);
-    }
-
-    saveData();
-
-    // Redirect
-    window.location.href = 'index.html';
-}
-
 // --- Single Blog Page Logic ---
-function renderSingleBlogPage() {
+async function fetchSingleBlog() {
     const params = new URLSearchParams(window.location.search);
     const blogId = params.get('id');
     const container = document.getElementById('blogContainer');
 
     if (!blogId || !container) return;
 
-    const blog = state.blogs.find(b => b.id === blogId);
+    try {
+        const response = await fetch(`${API_URL}/${blogId}`);
+        if (!response.ok) throw new Error('Blog not found');
 
-    if (!blog) {
+        const blog = await response.json();
+        renderSingleBlog(blog, container);
+
+    } catch (error) {
+        console.error(error);
         container.innerHTML = '<h2>Blog not found</h2><a href="index.html" class="btn-primary">Go Home</a>';
-        return;
     }
+}
 
+function renderSingleBlog(blog, container) {
     const imgSrc = blog.image ? blog.image : 'https://placehold.co/800x400/1a3c6e/ffffff?text=Political+Blog';
 
     // Populate DOM
@@ -294,6 +269,7 @@ function formatDate(dateString) {
 }
 
 function formatContent(text) {
+    if (!text) return '';
     // Simple newline to paragraph conversion for displaying blog text
     return text.split('\n').map(p => `<p>${p}</p>`).join('');
 }
