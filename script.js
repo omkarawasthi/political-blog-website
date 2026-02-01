@@ -4,7 +4,7 @@
  */
 
 // Constants
-const API_URL = 'http://localhost:5000/api/blogs';
+const API_URL = 'https://political-blog-website-backend.onrender.com/api/blogs';
 const DEFAULT_CATEGORIES = ['Politics', 'Policy', 'Election', 'Opinion'];
 
 // App State
