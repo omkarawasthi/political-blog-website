@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Civic Voice</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-landmark"></i> Civic<span>Voice</span>
+            </a>
+            <div class="menu-toggle"><i class="fas fa-bars"></i></div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="objective.html" class="nav-link">Our Objective</a>
+                <a href="about.html" class="nav-link">About Us</a>
+                <a href="contact.html" class="nav-link">Contact</a>
+                <a href="add-blog.html" class="btn-primary"><i class="fas fa-plus"></i> Add Blog</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="static-page">
+            <h1 style="text-align: center; margin-bottom: 3rem;">Get in Touch</h1>
+
+            <div class="contact-grid">
+                <!-- Contact Info -->
+                <div>
+                    <h3>We'd love to hear from you.</h3>
+                    <p style="color: #666; margin-bottom: 2rem;">
+                        Whether you have a question about our content, a suggestion for a new topic, or just want to say
+                        hello.
+                    </p>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <i class="fas fa-envelope" style="color: var(--primary-color); width: 25px;"></i>
+                        <strong>Email:</strong> contact@civicvoice.org
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary-color); width: 25px;"></i>
+                        <strong>Address:</strong> 123 Democracy Lane, Policity, DC 20001
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <i class="fas fa-phone" style="color: var(--primary-color); width: 25px;"></i>
+                        <strong>Phone:</strong> (555) 123-4567
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <h4>Follow Us</h4>
+                        <div
+                            style="display: flex; gap: 1rem; margin-top: 1rem; font-size: 1.5rem; color: var(--primary-color);">
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-facebook"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <form id="contactForm" onsubmit="event.preventDefault(); alert('Message sent! (Demo only)');">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" placeholder="What is this regarding?">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" placeholder="Your message..." style="min-height: 120px;"
+                            required></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Send Message</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Civic Voice Blog. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
